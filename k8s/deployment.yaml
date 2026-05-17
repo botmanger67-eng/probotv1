@@ -1,0 +1,75 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: project-orchestrator-bot
+  namespace: default
+  labels:
+    app: project-orchestrator-bot
+    tier: backend
+spec:
+  replicas: 2
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 1
+      maxSurge: 1
+  selector:
+    matchLabels:
+      app: project-orchestrator-bot
+      tier: backend
+  template:
+    metadata:
+      labels:
+        app: project-orchestrator-bot
+        tier: backend
+    spec:
+      terminationGracePeriodSeconds: 30
+      containers:
+        - name: api
+          image: ${DOCKER_IMAGE:-your-registry/your-app:latest}
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 8000
+              name: http
+          envFrom:
+            - configMapRef:
+                name: app-config
+            - secretRef:
+                name: app-secret
+          env:
+            - name: LOG_LEVEL
+              value: "INFO"
+          resources:
+            requests:
+              memory: "256Mi"
+              cpu: "250m"
+            limits:
+              memory: "512Mi"
+              cpu: "500m"
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: http
+            initialDelaySeconds: 10
+            periodSeconds: 15
+            timeoutSeconds: 5
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /ready
+              port: http
+            initialDelaySeconds: 5
+            periodSeconds: 10
+            timeoutSeconds: 3
+            failureThreshold: 2
+          startupProbe:
+            httpGet:
+              path: /health
+              port: http
+            initialDelaySeconds: 5
+            periodSeconds: 5
+            failureThreshold: 30
+      restartPolicy: Always
+      # Optional: nodeSelector, tolerations, affinity for production
+      # nodeSelector:
+      #   environment: prod
