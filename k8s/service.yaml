@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: project-bot-backend-service
+  namespace: default
+  labels:
+    app: project-bot-backend
+spec:
+  selector:
+    app: project-bot-backend
+  ports:
+  - port: 80
+    targetPort: 8000
+    protocol: TCP
+  type: ClusterIP
